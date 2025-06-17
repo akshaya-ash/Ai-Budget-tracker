@@ -13,7 +13,7 @@ Developed during the *"DSA Challenge and AIdea Sprint Challenge"* organized by t
 
 
 ## 🚀 Live Demo
-Experience the app: [https://akshaya-ash.github.io/Ai-Budget-tracker/](https://akshaya-ash.github.io/AI-Budget-tracker/)  
+Experience the app: [https://akshaya-ash.github.io/Ai-Budget-tracker/](https://akshaya-ash.github.io/Ai-Budget-tracker/)  
 (Replace with your actual GitHub Pages URL)
 
 ## ✨ Key Features
