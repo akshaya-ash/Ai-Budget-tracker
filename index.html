@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Budget Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!--Login Container -->
+    <div id="login-container" class="animate__animated animate__fadeIn">
+        <div class="login-card">
+            <div class="login-logo">💰</div>
+            <h1>Budget Tracker</h1>
+            <p>Log in to manage your finances smartly</p>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter your username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" id="login-button">Log In</button>
+            </form>
+            
+            <p style="margin-top: 20px; font-size: 14px; color: #666;">
+                Don't have an account? <a href="#" style="color: var(--primary-color);">Sign up</a>
+            </p>
+        </div>
+    </div>
+    
+    <!-- App Container-->
+    <div id="app-container" class="animate__animated animate__fadeIn">
+        <div class="header">
+            <h1>AI Budget Tracker</h1>
+            <div class="user-profile">
+                <div class="avatar" id="user-avatar">JS</div>
+                <div>
+                    <div id="user-name">John Smith</div>
+                    <button class="logout-btn" id="logout-button">Logout</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="container">
+            <div>
+                <!-- Input Form -->
+                <div class="card slide-up">
+                    <h2>Add New Expense</h2>
+                    <div class="form-group">
+                        <label for="expense-description">Description</label>
+                        <input type="text" id="expense-description" placeholder="What did you spend on?">
+                    </div>
+                    <div class="form-group">
+                        <label for="expense-amount">Amount ($)</label>
+                        <input type="number" id="expense-amount" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="expense-category">Category</label>
+                        <select id="expense-category">
+                            <option value="food">Food & Dining</option>
+                            <option value="housing">Housing & Utilities</option>
+                            <option value="transportation">Transportation</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="shopping">Shopping</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="expense-date">Date</label>
+                        <input type="date" id="expense-date">
+                    </div>
+                    <button id="add-expense">Add Expense</button>
+                </div>
+                
+                <!-- Budget Setup -->
+                <div class="card slide-up" style="animation-delay: 0.1s;">
+                    <h2>Budget Settings</h2>
+                    <div class="form-group">
+                        <label for="budget-food">Food & Dining Budget ($)</label>
+                        <input type="number" id="budget-food" value="500">
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-housing">Housing & Utilities Budget ($)</label>
+                        <input type="number" id="budget-housing" value="1200">
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-transportation">Transportation Budget ($)</label>
+                        <input type="number" id="budget-transportation" value="300">
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-entertainment">Entertainment Budget ($)</label>
+                        <input type="number" id="budget-entertainment" value="200">
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-shopping">Shopping Budget ($)</label>
+                        <input type="number" id="budget-shopping" value="300">
+                    </div>
+                    <button id="save-budget">Save Budget</button>
+                </div>
+            </div>
+            
+            <div>
+                <!-- Budget Score -->
+                <div class="card slide-up" style="animation-delay: 0.2s;">
+                    <h2>Budget Health</h2>
+                    <div class="budget-score good" id="budget-score"><span>85</span></div>
+                    <div id="score-explanation" style="text-align: center; margin-bottom: 20px;">Your budget is in good health! Keep it up.</div>
+                    
+                    <div class="insights" id="ai-insights">
+                        <h3>AI Insights</h3>
+                        <div id="insights-content">
+                            <div class="alert alert-info animate__animated animate__fadeIn">Welcome! Add your expenses to get personalized insights.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Expense Chart -->
+                <div class="card slide-up" style="animation-delay: 0.3s;">
+                    <h2>Spending Overview</h2>
+                    <div class="chart-container">
+                        <canvas id="expense-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Recent Expenses -->
+                <div class="card slide-up" style="animation-delay: 0.4s;">
+                    <h2>Recent Expenses</h2>
+                    <div class="expense-list" id="expense-list">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+                let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        let budgets = JSON.parse(localStorage.getItem('budgets')) || {
+            food: 500,
+            housing: 1200,
+            transportation: 300,
+            entertainment: 200,
+            shopping: 300
+        };
+
+        let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+        const users = JSON.parse(localStorage.getItem('users')) || [
+            { username: 'demo', password: 'password', displayName: 'Demo User', initials: 'DU' }
+        ];
+
+        if (currentUser) {
+            showApp();
+            updateUserInfo();
+        }
+        
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const loginButton = document.getElementById('login-button');
+            const originalButtonText = loginButton.textContent;
+            loginButton.innerHTML = '<div class="loader"><div></div><div></div><div></div><div></div></div>';
+            loginButton.disabled = true;
+            
+            setTimeout(() => {
+                const user = users.find(u => u.username === username && u.password === password);
+                
+                if (user) {
+                    currentUser = {
+                        username: user.username,
+                        displayName: user.displayName,
+                        initials: user.initials
+                    };
+                    
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    
+                    document.getElementById('login-container').classList.remove('animate__fadeIn');
+                    document.getElementById('login-container').classList.add('animate__fadeOut');
+                    
+                    setTimeout(() => {
+                        showApp();
+                        updateUserInfo();
+                        showToast('Successfully logged in!', 'success');
+                    }, 500);
+                } else {
+                    showToast('Invalid username or password', 'error');
+                    loginButton.textContent = originalButtonText;
+                    loginButton.disabled = false;
+                }
+            }, 1000);
+        });
+        
+        document.getElementById('logout-button').addEventListener('click', function() {
+            document.getElementById('app-container').classList.remove('animate__fadeIn');
+            document.getElementById('app-container').classList.add('animate__fadeOut');
+            
+            setTimeout(() => {
+                localStorage.removeItem('currentUser');
+                currentUser = null;
+
+                document.getElementById('login-container').style.display = 'flex';
+                document.getElementById('login-container').classList.remove('animate__fadeOut');
+                document.getElementById('login-container').classList.add('animate__fadeIn');
+                document.getElementById('app-container').style.display = 'none';
+
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                
+                showToast('You have been logged out', 'info');
+            }, 500);
+        });
+
+        function showApp() {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
+            document.getElementById('app-container').classList.remove('animate__fadeOut');
+            document.getElementById('app-container').classList.add('animate__fadeIn');
+            
+            loadInitialData();
+        }
+
+        function updateUserInfo() {
+            if (currentUser) {
+                document.getElementById('user-name').textContent = currentUser.displayName;
+                document.getElementById('user-avatar').textContent = currentUser.initials;
+            }
+        }
+
+        function loadInitialData() {
+            document.getElementById('budget-food').value = budgets.food;
+            document.getElementById('budget-housing').value = budgets.housing;
+            document.getElementById('budget-transportation').value = budgets.transportation;
+            document.getElementById('budget-entertainment').value = budgets.entertainment;
+            document.getElementById('budget-shopping').value = budgets.shopping;
+
+            document.getElementById('expense-date').valueAsDate = new Date();
+
+            updateExpenseList();
+            updateCharts();
+            updateBudgetScore();
+            generateAIInsights();
+        }
+
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <strong>${type === 'success' ? '✓ Success' : type === 'error' ? '✗ Error' : 'ℹ Info'}</strong>
+                    <div>${message}</div>
+                </div>
+                <button class="toast-close">×</button>
+            `;
+            
+            toastContainer.appendChild(toast);
+
+            toast.querySelector('.toast-close').addEventListener('click', function() {
+                toast.remove();
+            });
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        document.getElementById('add-expense').addEventListener('click', addExpense);
+        document.getElementById('save-budget').addEventListener('click', saveBudget);
+
+        function addExpense() {
+            const description = document.getElementById('expense-description').value;
+            const amount = parseFloat(document.getElementById('expense-amount').value);
+            const category = document.getElementById('expense-category').value;
+            const date = document.getElementById('expense-date').value;
+            
+            if (!description || isNaN(amount) || amount <= 0 || !date) {
+                showToast('Please fill in all fields correctly', 'error');
+                return;
+            }
+
+            let detectedCategory = category;
+            const keywords = {
+                food: ['grocery', 'restaurant', 'cafe', 'dinner', 'lunch', 'breakfast', 'food', 'meal', 'coffee'],
+                housing: ['rent', 'mortgage', 'utilities', 'electric', 'water', 'gas', 'internet', 'repair'],
+                transportation: ['gas', 'fuel', 'car', 'bus', 'train', 'uber', 'lyft', 'taxi', 'transit'],
+                entertainment: ['movie', 'netflix', 'spotify', 'game', 'concert', 'theater', 'show'],
+                shopping: ['clothes', 'amazon', 'mall', 'shop', 'store', 'purchase']
+            };
+            
+            const descLower = description.toLowerCase();
+            for (const [cat, words] of Object.entries(keywords)) {
+                if (words.some(word => descLower.includes(word))) {
+                    detectedCategory = cat;
+                    break;
+                }
+            }
+            
+            const newExpense = {
+                id: Date.now(),
+                description,
+                amount,
+                category: detectedCategory,
+                date,
+                timestamp: new Date().toISOString()
+            };
+            
+            expenses.push(newExpense);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+
+            document.getElementById('expense-description').value = '';
+            document.getElementById('expense-amount').value = '';
+            document.getElementById('expense-date').valueAsDate = new Date();
+
+            updateExpenseList();
+            updateCharts();
+            updateBudgetScore();
+            generateAIInsights();
+
+            const categoryBudget = budgets[detectedCategory];
+            const categoryTotal = getCategoryTotal(detectedCategory);
+            
+            if (categoryTotal > categoryBudget) {
+                showToast(`Warning: You've exceeded your ${getCategoryName(detectedCategory)} budget!`, 'error');
+            } else if (categoryTotal > (categoryBudget * 0.8)) {
+                showToast(`You're approaching your ${getCategoryName(detectedCategory)} budget limit`, 'info');
+            } else {
+                showToast('Expense added successfully!', 'success');
+            }
+        }
+        
+        function saveBudget() {
+            budgets = {
+                food: parseFloat(document.getElementById('budget-food').value) || 0,
+                housing: parseFloat(document.getElementById('budget-housing').value) || 0,
+                transportation: parseFloat(document.getElementById('budget-transportation').value) || 0,
+                entertainment: parseFloat(document.getElementById('budget-entertainment').value) || 0,
+                shopping: parseFloat(document.getElementById('budget-shopping').value) || 0
+            };
+            
+            localStorage.setItem('budgets', JSON.stringify(budgets));
+            showToast('Budget updated successfully!', 'success');
+            
+            updateBudgetScore();
+            updateCharts();
+            generateAIInsights();
+        }
+
+        function updateExpenseList() {
+            const expenseList = document.getElementById('expense-list');
+            expenseList.innerHTML = '';
+            
+            const sortedExpenses = [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            const recentExpenses = sortedExpenses.slice(0, 10);
+            
+            if (recentExpenses.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.textContent = 'No expenses yet. Add your first expense!';
+                emptyMessage.style.textAlign = 'center';
+                emptyMessage.style.padding = '20px';
+                emptyMessage.style.color = '#666';
+                expenseList.appendChild(emptyMessage);
+                return;
+            }
+
+            recentExpenses.forEach((expense, index) => {
+                const expenseItem = document.createElement('div');
+                expenseItem.className = 'expense-item animate__animated animate__fadeIn';
+                expenseItem.style.animationDelay = `${index * 0.05}s`;
+
+                const expenseDate = new Date(expense.date);
+                const formattedDate = expenseDate.toLocaleDateString();
+                
+                expenseItem.innerHTML = `
+                    <div>
+                        <div>${expense.description}</div>
+                        <div style="font-size: 12px; color: #666;">${formattedDate}</div>
+                        <span class="category-badge category-${expense.category}">${getCategoryName(expense.category)}</span>
+                    </div>
+                    <div class="expense-amount">$${expense.amount.toFixed(2)}</div>
+                `;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '×';
+                deleteBtn.style.background = 'none';
+                deleteBtn.style.border = 'none';
+                deleteBtn.style.color = '#666';
+                deleteBtn.style.cursor = 'pointer';
+                deleteBtn.style.fontSize = '20px';
+                deleteBtn.style.padding = '0 5px';
+                deleteBtn.style.boxShadow = 'none';
+                
+                deleteBtn.addEventListener('click', () => {
+                    expenses = expenses.filter(e => e.id !== expense.id);
+                    localStorage.setItem('expenses', JSON.stringify(expenses));
+
+                    expenseItem.classList.add('animate__fadeOut');
+                    setTimeout(() => {
+                        updateExpenseList();
+                        updateCharts();
+                        updateBudgetScore();
+                        generateAIInsights();
+                        showToast('Expense deleted', 'info');
+                    }, 300);
+                });
+                
+                expenseItem.appendChild(deleteBtn);
+                expenseList.appendChild(expenseItem);
+            });
+        }
+        
+        function updateCharts() {
+            const ctx = document.getElementById('expense-chart').getContext('2d');
+
+            if (window.expenseChart) {
+                window.expenseChart.destroy();
+            }
+
+            const categoryTotals = {
+                food: getCategoryTotal('food'),
+                housing: getCategoryTotal('housing'),
+                transportation: getCategoryTotal('transportation'),
+                entertainment: getCategoryTotal('entertainment'),
+                shopping: getCategoryTotal('shopping')
+            };
+
+            const percentages = {
+                food: (categoryTotals.food / budgets.food) * 100,
+                housing: (categoryTotals.housing / budgets.housing) * 100,
+                transportation: (categoryTotals.transportation / budgets.transportation) * 100,
+                entertainment: (categoryTotals.entertainment / budgets.entertainment) * 100,
+                shopping: (categoryTotals.shopping / budgets.shopping) * 100
+            };
+
+            const chartData = {
+                labels: [
+                    'Food & Dining',
+                    'Housing & Utilities',
+                    'Transportation',
+                    'Entertainment',
+                    'Shopping'
+                ],
+                datasets: [
+                    {
+                        label: 'Current Spending ($)',
+                        data: [
+                            categoryTotals.food,
+                            categoryTotals.housing,
+                            categoryTotals.transportation,
+                            categoryTotals.entertainment,
+                            categoryTotals.shopping
+                        ],
+                        backgroundColor: 'rgba(86, 100, 210, 0.7)',
+                        borderColor: 'rgba(86, 100, 210, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Budget ($)',
+                        data: [
+                            budgets.food,
+                            budgets.housing,
+                            budgets.transportation,
+                            budgets.entertainment,
+                            budgets.shopping
+                        ],
+                        backgroundColor: 'rgba(150, 150, 150, 0.3)',
+                        borderColor: 'rgba(150, 150, 150, 0.7)',
+                        borderWidth: 1,
+                        borderDash: [5, 5]
+                    }
+                ]
+            };
+
+            const chartOptions = {
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1000
+                }
+            };
+
+            window.expenseChart = new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: chartOptions
+            });
+        }
+
+        function updateBudgetScore() {
+            const budgetScore = document.getElementById('budget-score');
+            const scoreExplanation = document.getElementById('score-explanation');
+
+            const totalBudget = Object.values(budgets).reduce((sum, budget) => sum + budget, 0);
+            const totalSpent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const budgetPercentage = (totalSpent / totalBudget) * 100;
+
+            let score = 100;
+
+            for (const category in budgets) {
+                const categoryTotal = getCategoryTotal(category);
+                const categoryBudget = budgets[category];
+                
+                if (categoryTotal > categoryBudget) {
+                    const excessPercentage = (categoryTotal - categoryBudget) / categoryBudget;
+                    score -= excessPercentage * 20; 
+                }
+            }
+
+            if (budgetPercentage > 100) {
+                score -= (budgetPercentage - 100) * 0.5; 
+            } else if (budgetPercentage > 90) {
+                score -= (budgetPercentage - 90) * 0.3; 
+            }
+  
+            score = Math.max(0, Math.min(100, Math.round(score)));
+
+            budgetScore.innerHTML = `<span>${score}</span>`;
+            
+            budgetScore.className = 'budget-score';
+            if (score >= 80) {
+                budgetScore.classList.add('good');
+                scoreExplanation.textContent = 'Your budget is in good health! Keep it up.';
+            } else if (score >= 60) {
+                budgetScore.classList.add('warning');
+                scoreExplanation.textContent = 'Your budget is okay, but there\'s room for improvement.';
+            } else {
+                budgetScore.classList.add('danger');
+                scoreExplanation.textContent = 'Your budget needs attention. Check your spending habits.';
+            }
+            budgetScore.style.setProperty('--percentage', `${score}%`);
+        }
+
+        function generateAIInsights() {
+            const insightsContent = document.getElementById('insights-content');
+            insightsContent.innerHTML = '';
+            
+            if (expenses.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'alert alert-info';
+                emptyMessage.textContent = 'Add your expenses to get personalized insights.';
+                insightsContent.appendChild(emptyMessage);
+                return;
+            }
+
+            const overBudgetCategories = [];
+            for (const category in budgets) {
+                const categoryTotal = getCategoryTotal(category);
+                const categoryBudget = budgets[category];
+                
+                if (categoryTotal > categoryBudget) {
+                    overBudgetCategories.push({
+                        name: getCategoryName(category),
+                        amount: categoryTotal - categoryBudget,
+                        percentage: (categoryTotal / categoryBudget) * 100 - 100
+                    });
+                }
+            }
+
+            overBudgetCategories.sort((a, b) => b.percentage - a.percentage);
+
+            if (overBudgetCategories.length > 0) {
+                overBudgetCategories.forEach(category => {
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-warning animate__animated animate__fadeIn';
+                    alert.innerHTML = `
+                        <strong>Budget Alert:</strong> You've exceeded your ${category.name} budget by 
+                        <strong>$${category.amount.toFixed(2)}</strong> (${category.percentage.toFixed(1)}% over).
+                    `;
+                    insightsContent.appendChild(alert);
+                });
+
+                const worstCategory = overBudgetCategories[0];
+
+                let tip = '';
+                switch (worstCategory.name.toLowerCase()) {
+                    case 'food & dining':
+                        tip = 'Try meal prepping at home or using grocery shopping apps to find deals.';
+                        break;
+                    case 'housing & utilities':
+                        tip = 'Consider checking for energy leaks or unplugging electronics when not in use.';
+                        break;
+                    case 'transportation':
+                        tip = 'Consider carpooling, public transit, or combining errands into single trips.';
+                        break;
+                    case 'entertainment':
+                        tip = 'Look for free events in your area or take advantage of subscription trials.';
+                        break;
+                    case 'shopping':
+                        tip = 'Wait 24 hours before making non-essential purchases to avoid impulse buys.';
+                        break;
+                }
+                
+                const tipDiv = document.createElement('div');
+                tipDiv.className = 'tip animate__animated animate__fadeIn';
+                tipDiv.style.animationDelay = '0.3s';
+                tipDiv.innerHTML = `<strong>Tip:</strong> ${tip}`;
+                insightsContent.appendChild(tipDiv);
+            } else {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-info animate__animated animate__fadeIn';
+                alert.innerHTML = '<strong>Great job!</strong> All your spending is within budget.';
+                insightsContent.appendChild(alert);
+            }
+            
+            const now = new Date();
+            const lastWeekExpenses = expenses.filter(e => {
+                const expenseDate = new Date(e.date);
+                const daysDiff = (now - expenseDate) / (1000 * 60 * 60 * 24);
+                return daysDiff <= 7;
+            });
+            
+            if (lastWeekExpenses.length >= 3) {
+                const lastWeekTotal = lastWeekExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+                const averageDailySpend = lastWeekTotal / 7;
+                
+                if (averageDailySpend > 50) { 
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-info animate__animated animate__fadeIn';
+                    alert.style.animationDelay = '0.6s';
+                    alert.innerHTML = `
+                        <strong>Spending Trend:</strong> Your average daily spend is <strong>$${averageDailySpend.toFixed(2)}</strong> 
+                        over the past week. This might be higher than normal.
+                    `;
+                    insightsContent.appendChild(alert);
+                }
+            }
+        }
+
+        function getCategoryTotal(category) {
+            return expenses
+                .filter(expense => expense.category === category)
+                .reduce((total, expense) => total + expense.amount, 0);
+        }
+        
+        function getCategoryName(category) {
+            const names = {
+                food: 'Food & Dining',
+                housing: 'Housing & Utilities',
+                transportation: 'Transportation',
+                entertainment: 'Entertainment',
+                shopping: 'Shopping'
+            };
+            return names[category] || category;
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('expense-date')) {
+                document.getElementById('expense-date').valueAsDate = new Date();
+            }
+        });
+    </script>
+</body>
+</html>
